@@ -1,0 +1,1 @@
+We are looking for a Data Scientist or ML Engineer with strong Python experience. The ideal candidate has hands-on experience in NLP, machine learning algorithms, scikit-learn, pandas, spaCy, and Git. Responsibilities include extracting text data, building predictive models, and deploying NLP solutions.
