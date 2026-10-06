@@ -1,105 +1,134 @@
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List
 import os
-import glob
-import pandas as pd
-from tqdm import tqdm
+from sentence_transformers import SentenceTransformer, util
 
-from src.parser import parse_resume, load_job_description
-from src.preprocessor import clean_text_light
-from src.matcher import ResumeMatcher
+# Import your custom parser module functions
+from src.parser import parse_resume
 
-def process_resume_batch(resumes_dir, jd_path, output_csv="data/leaderboard.csv"):
-    print("=" * 65)
-    print("🚀 RESCHECK BATCH PROCESSING ENGINE")
-    print("=" * 65)
-    
-    # 1. Load Job Description
-    if not os.path.exists(jd_path):
-        raise FileNotFoundError(f"Job description file not found at: {jd_path}")
-    
-    raw_jd = load_job_description(jd_path)
-    clean_jd = clean_text_light(raw_jd)
-    print(f"✓ Loaded job description from '{jd_path}'.")
+app = FastAPI(title="ResCheck SaaS Engine")
 
-    # 2. Collect all supported resume files (.pdf, .docx, .doc)
-    supported_extensions = ["*.pdf", "*.docx", "*.doc", "*.PDF", "*.DOCX", "*.DOC"]
-    resume_files = []
-    for ext in supported_extensions:
-        resume_files.extend(glob.glob(os.path.join(resumes_dir, ext)))
-    
-    # Remove duplicates
-    resume_files = sorted(list(set(resume_files)))
-    total_files = len(resume_files)
-    
-    if total_files == 0:
-        print(f"⚠️ No resumes found in '{resumes_dir}'.")
-        print(f"Please move your 228 resume files into '{resumes_dir}' and run again.")
-        return
+print("Loading NLP Embedding Model (this takes a few seconds)...")
+nlp_model = SentenceTransformer('all-MiniLM-L6-v2')
+print("Model Loaded Successfully!")
 
-    print(f"✓ Found {total_files} resume files in '{resumes_dir}'.")
-    
-    # 3. Initialize Transformer Model ONCE for maximum performance
-    matcher = ResumeMatcher()
-    
-    results = []
-    print("\n⏳ Processing resumes and calculating semantic match scores...")
-    
-    # Loop over all resumes with a progress bar
-    for file_path in tqdm(resume_files, desc="Matching Resumes"):
-        file_name = os.path.basename(file_path)
-        try:
-            # Parse & Preprocess
-            raw_resume = parse_resume(file_path)
-            clean_resume = clean_text_light(raw_resume)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Expand this library over time to improve detection accuracy
+TECH_KEYWORDS = {
+    "python", "fastapi", "react", "tailwind css", "docker", "kubernetes", "aws", 
+    "nlp", "machine learning", "scikit-learn", "pandas", "spacy", "git", 
+    "sql", "pytorch", "tensorflow", "java", "c++", "javascript", "typescript", "data scientist"
+}
+
+def extract_skills(text: str) -> set:
+    text_lower = text.lower()
+    return {skill for skill in TECH_KEYWORDS if skill in text_lower}
+
+@app.post("/api/match-single")
+async def match_single(
+    file: UploadFile = File(...),
+    jd_text: str = Form(...)
+):
+    try:
+        temp_path = f"temp_{file.filename}"
+        with open(temp_path, "wb") as buffer:
+            buffer.write(await file.read())
+
+        resume_data = parse_resume(temp_path)
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
             
-            # Compute Semantic Similarity
-            match_score = matcher.calculate_semantic_score(clean_resume, clean_jd)
+        resume_text = resume_data.get("text", str(resume_data)) if isinstance(resume_data, dict) else str(resume_data)
+
+        # 1. Calculate Semantic Score (Context & Soft Skills)
+        jd_embedding = nlp_model.encode(jd_text, convert_to_tensor=True)
+        resume_embedding = nlp_model.encode(resume_text, convert_to_tensor=True)
+        semantic_score = max(0, min(100, int(util.cos_sim(jd_embedding, resume_embedding).item() * 100)))
+
+        # 2. Calculate Hard Skill Score (Keyword overlap)
+        jd_skills = extract_skills(jd_text)
+        resume_skills = extract_skills(resume_text)
+        
+        matched = list(jd_skills.intersection(resume_skills))
+        missing = list(jd_skills.difference(resume_skills))
+
+        if len(jd_skills) > 0:
+            skill_score = int((len(matched) / len(jd_skills)) * 100)
+        else:
+            skill_score = semantic_score # Fallback if JD has no recognized tech keywords
+
+        # 3. Hybrid Calculation: 60% Skills, 40% Semantic Context
+        final_match_score = int((skill_score * 0.6) + (semantic_score * 0.4))
+
+        return {
+            "filename": file.filename,
+            "match_score": final_match_score,
+            "matched_skills": matched if matched else ["No core tech matches"],
+            "missing_skills": missing if missing else ["None"]
+        }
+    except Exception as e:
+        if os.path.exists(f"temp_{file.filename}"):
+            os.remove(f"temp_{file.filename}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/batch-rank")
+async def batch_rank(
+    files: List[UploadFile] = File(...),
+    jd_text: str = Form(...)
+):
+    try:
+        jd_embedding = nlp_model.encode(jd_text, convert_to_tensor=True)
+        jd_skills = extract_skills(jd_text)
+        
+        leaderboard = []
+        
+        for file in files:
+            temp_path = f"temp_{file.filename}"
+            with open(temp_path, "wb") as buffer:
+                buffer.write(await file.read())
+
+            resume_data = parse_resume(temp_path)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                
+            resume_text = resume_data.get("text", str(resume_data)) if isinstance(resume_data, dict) else str(resume_data)
             
-            # Extract Keyword Gaps
-            matched_kw, missing_kw = matcher.find_keyword_gaps(raw_resume, raw_jd)
+            # Semantic Score
+            resume_embedding = nlp_model.encode(resume_text, convert_to_tensor=True)
+            semantic_score = max(0, min(100, int(util.cos_sim(jd_embedding, resume_embedding).item() * 100)))
             
-            results.append({
-                "Filename": file_name,
-                "Match Score (%)": match_score,
-                "Matched Skills Count": len(matched_kw),
-                "Missing Skills Count": len(missing_kw),
-                "Top Matched Skills": ", ".join(matched_kw[:5]),
-                "Top Missing Skills": ", ".join(missing_kw[:5]),
-                "Status": "Success"
+            # Skill Score
+            resume_skills = extract_skills(resume_text)
+            matched = list(jd_skills.intersection(resume_skills))
+            missing = list(jd_skills.difference(resume_skills))
+            
+            if len(jd_skills) > 0:
+                skill_score = int((len(matched) / len(jd_skills)) * 100)
+            else:
+                skill_score = semantic_score
+
+            # Hybrid Score
+            final_match_score = int((skill_score * 0.6) + (semantic_score * 0.4))
+
+            leaderboard.append({
+                "filename": file.filename,
+                "match_score": final_match_score,
+                "top_missing_skills": missing[:3]
             })
-        except Exception as e:
-            # Handle corrupted or unreadable files without crashing the pipeline
-            results.append({
-                "Filename": file_name,
-                "Match Score (%)": 0.0,
-                "Matched Skills Count": 0,
-                "Missing Skills Count": 0,
-                "Top Matched Skills": "N/A",
-                "Top Missing Skills": "N/A",
-                "Status": f"Error: {str(e)}"
-            })
-
-    # 4. Build DataFrame and Rank Candidates
-    df = pd.DataFrame(results)
-    df = df.sort_values(by="Match Score (%)", ascending=False).reset_index(drop=True)
-    df.index += 1  # 1-based ranking
-    df.index.name = "Rank"
-
-    # Save to CSV
-    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
-    df.to_csv(output_csv)
-    print(f"\n✅ Full leaderboard exported to: {output_csv}")
-
-    # 5. Display Top 10 Candidates in Console
-    print("\n" + "🏆 TOP 10 RESUME LEADERBOARD " + "="*35)
-    display_cols = ["Filename", "Match Score (%)", "Matched Skills Count", "Top Missing Skills", "Status"]
-    print(df[display_cols].head(10).to_string())
-    print("=" * 65)
-
-if __name__ == "__main__":
-    RESUMES_DIR = "data/resumes"
-    JD_FILE = "data/job_desc.txt"
-    
-    # Auto-create directory if it doesn't exist
-    os.makedirs(RESUMES_DIR, exist_ok=True)
-    
-    process_resume_batch(RESUMES_DIR, JD_FILE)
+            
+        leaderboard.sort(key=lambda x: x["match_score"], reverse=True)
+        
+        for idx, item in enumerate(leaderboard):
+            item["rank"] = idx + 1
+            
+        return {"leaderboard": leaderboard}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
