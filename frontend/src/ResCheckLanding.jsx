@@ -54,7 +54,7 @@ export default function ResCheckLanding({ onNavigate, darkMode, setDarkMode }) {
 
         {/* Centered Rotating Ticker & Action Button */}
         <main className="relative z-10 max-w-4xl mx-auto flex-1 flex flex-col items-center justify-center -mt-16 md:-mt-24 text-center my-auto">
-          <div className="w-full h-[260px] md:h-[300px] flex items-center justify-center px-2">
+          <div className="w-full h-65 md:h-75 flex items-center justify-center px-2">
             <h1 
               className={`text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.2] text-white drop-shadow-xl transition-all duration-700 ease-in-out ${
                 fade ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-[0.99]'
@@ -111,7 +111,7 @@ export default function ResCheckLanding({ onNavigate, darkMode, setDarkMode }) {
         <div className="max-w-6xl mx-auto relative">
           
           {/* Giant Oversized Editorial Typography Background */}
-          <div className="relative select-none pointer-events-none mb-[-4rem] md:mb-[-7rem] z-0">
+          <div className="relative select-none pointer-events-none -mb-16 md:-mb-28 z-0">
             <h2 className="text-[14vw] font-black uppercase tracking-tighter leading-none text-white/10">
               SMART MATCH
             </h2>
@@ -121,7 +121,7 @@ export default function ResCheckLanding({ onNavigate, darkMode, setDarkMode }) {
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-8">
             
             {/* Main Central Media Card */}
-            <div className="lg:col-span-9 relative rounded-3xl overflow-hidden border border-white/15 bg-gradient-to-br from-zinc-900 via-black to-zinc-950 p-8 md:p-12 shadow-2xl min-h-[420px] flex flex-col justify-between">
+            <div className="lg:col-span-9 relative rounded-3xl overflow-hidden border border-white/15 bg-linear-to-br from-zinc-900 via-black to-zinc-950 p-8 md:p-12 shadow-2xl min-h-105 flex flex-col justify-between">
               
               {/* Glassmorphic Stat Overlay (Top Left) */}
               <div className="max-w-xs bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
@@ -150,7 +150,7 @@ export default function ResCheckLanding({ onNavigate, darkMode, setDarkMode }) {
             </div>
 
             {/* Vibrant Yellow High-Contrast Badge (Bottom-Right Overlap) */}
-            <div className="lg:col-span-3 bg-yellow-400 text-black rounded-3xl p-8 font-mono flex flex-col justify-between h-full min-h-[280px] shadow-2xl transition-transform hover:scale-[1.02]">
+            <div className="lg:col-span-3 bg-yellow-400 text-black rounded-3xl p-8 font-mono flex flex-col justify-between h-full min-h-70 shadow-2xl transition-transform hover:scale-[1.02]">
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider opacity-80">
                 <span>RESCHECK®</span>
                 <ArrowUpRight size={20} />

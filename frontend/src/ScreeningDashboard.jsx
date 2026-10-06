@@ -215,7 +215,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
         
         {/* LEFT COLUMN: Inputs */}
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className={`rounded-[2rem] p-8 border ${
+          <div className={`rounded-4xl p-8 border ${
             darkMode 
               ? 'bg-[#161b22] border-[#30363d]' 
               : 'bg-white border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
@@ -268,7 +268,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
                     onChange={activeTab === 'single' ? handleSingleFileChange : handleBatchFileChange}
                   />
                 </label>
-                <span className={`text-sm truncate max-w-[200px] ${darkMode ? 'text-[#8b949e]' : 'text-gray-500'}`}>
+                <span className={`text-sm truncate max-w-50 ${darkMode ? 'text-[#8b949e]' : 'text-gray-500'}`}>
                   {activeTab === 'single' 
                     ? (file ? file.name : "No file chosen") 
                     : (batchFiles.length > 0 ? `${batchFiles.length} files chosen` : "No files chosen")}
@@ -296,7 +296,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
           
           {/* Waiting State */}
           {!singleResult && !batchResult && !loading && (
-            <div className={`rounded-[2rem] h-full min-h-[500px] border border-dashed flex flex-col items-center justify-center p-8 text-center ${
+            <div className={`rounded-4xl h-full min-h-125 border border-dashed flex flex-col items-center justify-center p-8 text-center ${
               darkMode 
                 ? 'bg-[#161b22] border-[#30363d] text-[#8b949e]' 
                 : 'bg-white border-gray-200 text-gray-400'
@@ -309,7 +309,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
 
           {/* Loading State */}
           {loading && (
-            <div className={`rounded-[2rem] h-full min-h-[500px] border flex flex-col items-center justify-center ${
+            <div className={`rounded-4xlfull min-h-125 border flex flex-col items-center justify-center ${
               darkMode 
                 ? 'bg-[#161b22] border-[#30363d] text-[#8b949e]' 
                 : 'bg-white border-gray-100 text-gray-400 shadow-sm'
@@ -325,7 +325,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
           {/* SINGLE MATCH RESULTS */}
           {activeTab === 'single' && singleResult && !loading && (
             <>
-              <div className={`rounded-[2rem] p-10 text-white shadow-2xl relative overflow-hidden ${
+              <div className={`rounded-4xl p-10 text-white shadow-2xl relative overflow-hidden ${
                 darkMode ? 'bg-[#161b22] border border-[#30363d]' : 'bg-[#1a1a1a]'
               }`}>
                 <div className="absolute -right-10 -top-10 opacity-5">
@@ -338,7 +338,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
                 <p className="text-sm text-gray-500 mt-1">File: {singleResult.filename}</p>
               </div>
 
-              <div className={`rounded-[2rem] p-8 border ${
+              <div className={`rounded-4xl p-8 border ${
                 darkMode 
                   ? 'bg-[#161b22] border-[#30363d]' 
                   : 'bg-white border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
@@ -388,7 +388,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
 
           {/* BATCH LEADERBOARD WITH SEARCH & PAGINATION */}
           {activeTab === 'batch' && batchResult && !loading && (
-            <div className={`rounded-[2rem] p-6 md:p-8 border overflow-hidden flex flex-col ${
+            <div className={`rounded-4xl p-6 md:p-8 border overflow-hidden flex flex-col ${
               darkMode 
                 ? 'bg-[#161b22] border-[#30363d]' 
                 : 'bg-white border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
@@ -459,7 +459,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
               </div>
               
               {/* LEADERBOARD SCROLL CONTAINER (Compact Vertically) */}
-              <div className="max-h-[580px] overflow-y-auto pr-1 space-y-2.5">
+              <div className="max-h-145 overflow-y-auto pr-1 space-y-2.5">
                 {displayedCandidates.length === 0 ? (
                   <div className="text-center py-12 text-xs text-gray-400">
                     No candidates found matching "{searchTerm}"
@@ -506,7 +506,7 @@ export default function ScreeningDashboard({ darkMode, setDarkMode }) {
                               </div>
 
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono border truncate max-w-[140px] sm:max-w-[200px] ${
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono border truncate max-w-35 sm:max-w-50 ${
                                   darkMode ? 'bg-[#161b22] border-[#30363d] text-[#8b949e]' : 'bg-gray-100 border-gray-200 text-gray-500'
                                 }`}>
                                   {candidate.filename}
